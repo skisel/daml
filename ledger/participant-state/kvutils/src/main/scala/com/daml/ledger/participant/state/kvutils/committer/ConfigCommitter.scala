@@ -71,7 +71,7 @@ private[kvutils] class ConfigCommitter(
       } else {
         if (ctx.preExecute) {
           // Propagate the time bounds and defer the checks to post-execution.
-          ctx.maximumRecordTime = Some(maximumRecordTime.toInstant)
+          ctx.maximumRecordTime = None // Some(maximumRecordTime.toInstant)
           setOutOfTimeBoundsLogEntry(result.submission, ctx)
         }
         StepContinue(result)

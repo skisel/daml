@@ -19,8 +19,10 @@ import com.daml.ledger.participant.state.v1.RejectionReasonV0
 import com.daml.lf.data.Time.Timestamp
 import com.daml.logging.LoggingContext
 
-private[transaction] class LedgerTimeValidator(defaultConfig: Configuration)
-    extends TransactionValidator {
+private[transaction] class LedgerTimeValidator(
+    defaultConfig: Configuration,
+    inStaticTimeMode: Boolean,
+) extends TransactionValidator {
 
   /** Creates a committer step that validates ledger effective time and the command's time-to-live. */
   override def createValidationStep(rejections: Rejections): Step =
@@ -88,11 +90,9 @@ private[transaction] class LedgerTimeValidator(defaultConfig: Configuration)
       timeModel: LedgerTimeModel,
   ): Instant =
     List(
-      maybeDeduplicateUntil
-        .map(
-          _.plus(Timestamp.Resolution)
-        ), // DeduplicateUntil defines a rejection window, endpoints inclusive
-      Some(timeModel.minRecordTime(ledgerTime)),
+      // DeduplicateUntil defines a rejection window, endpoints inclusive
+      maybeDeduplicateUntil.map(_.plus(Timestamp.Resolution)),
+      if (inStaticTimeMode) None else Some(timeModel.minRecordTime(ledgerTime)),
       Some(timeModel.minRecordTime(submissionTime)),
     ).flatten.max
 
@@ -101,7 +101,10 @@ private[transaction] class LedgerTimeValidator(defaultConfig: Configuration)
       ledgerTime: Instant,
       timeModel: LedgerTimeModel,
   ): Instant =
-    List(timeModel.maxRecordTime(ledgerTime), timeModel.maxRecordTime(submissionTime)).min
+    List(
+      if (inStaticTimeMode) None else Some(timeModel.maxRecordTime(ledgerTime)),
+      Some(timeModel.maxRecordTime(submissionTime)),
+    ).flatten.min
 
   private def getLedgerDeduplicateUntil(
       transactionEntry: DamlTransactionEntrySummary,

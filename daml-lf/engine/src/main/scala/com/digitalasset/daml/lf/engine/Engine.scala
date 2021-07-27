@@ -92,8 +92,9 @@ class Engine(val config: EngineConfig = new EngineConfig(LanguageVersion.StableV
       cmds: Commands,
       participantId: ParticipantId,
       submissionSeed: crypto.Hash,
+      submissionTimeO: Option[Time.Timestamp] = None,
   ): Result[(SubmittedTransaction, Tx.Metadata)] = {
-    val submissionTime = cmds.ledgerEffectiveTime
+    val submissionTime = submissionTimeO.getOrElse(cmds.ledgerEffectiveTime)
     preprocessor
       .preprocessCommands(cmds.commands)
       .flatMap { case (processedCmds, globalCids) =>

@@ -3,6 +3,7 @@
 
 package com.daml.ledger.on.sql
 
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.Executors
 
@@ -158,8 +159,7 @@ object SqlLedgerReaderWriter {
             metrics = metrics,
           ),
           postExecutionConflictDetector = new EqualityBasedPostExecutionConflictDetector,
-          postExecutionWriteSetSelector =
-            new TimeBasedWriteSetSelector(() => timeProvider.getCurrentTime),
+          postExecutionWriteSetSelector = new TimeBasedWriteSetSelector(() => Instant.now()),
           postExecutionWriter = new RawPostExecutionWriter,
           ledgerDataExporter = ledgerDataExporter,
         )

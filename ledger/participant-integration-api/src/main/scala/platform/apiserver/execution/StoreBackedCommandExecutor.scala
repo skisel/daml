@@ -10,7 +10,7 @@ import com.daml.ledger.api.domain.{Commands => ApiCommands}
 import com.daml.ledger.participant.state.index.v2.{ContractStore, IndexPackagesService}
 import com.daml.ledger.participant.state.v1.{SubmitterInfo, TransactionMeta}
 import com.daml.lf.crypto
-import com.daml.lf.data.{ImmArray, Ref}
+import com.daml.lf.data.{ImmArray, Ref, Time}
 import com.daml.lf.engine.{
   Engine,
   Result,
@@ -63,6 +63,7 @@ private[apiserver] final class StoreBackedCommandExecutor(
         commands.commands,
         participant,
         submissionSeed,
+        Some(Time.Timestamp.assertFromInstant(commands.submittedAt)),
       ),
     )
     consume(commands.actAs, commands.readAs, submissionResult)

@@ -67,7 +67,7 @@ private[kvutils] class TransactionCommitter(
     DamlTransactionEntrySummary(submission.getTransactionEntry)
 
   private val rejections = new Rejections(metrics)
-  private val ledgerTimeValidator = new LedgerTimeValidator(defaultConfig)
+  private val ledgerTimeValidator = new LedgerTimeValidator(defaultConfig, inStaticTimeMode)
   private val modelConformanceValidator = new ModelConformanceValidator(engine, metrics)
 
   override protected val steps: Steps[DamlTransactionEntrySummary] = Iterable(

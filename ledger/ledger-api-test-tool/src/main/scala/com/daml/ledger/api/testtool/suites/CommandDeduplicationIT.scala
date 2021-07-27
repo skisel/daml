@@ -32,12 +32,12 @@ final class CommandDeduplicationIT(timeoutScaleFactor: Double, ledgerTimeInterva
     allocate(SingleParty),
   )(implicit ec => { case Participants(Participant(ledger, party)) =>
     val requestA1 = ledger
-      .submitRequest(party, DummyWithAnnotation(party, "First submission").create.command)
+      .submitAndWaitRequest(party, DummyWithAnnotation(party, "First submission").create.command)
       .update(
         _.commands.deduplicationTime := deduplicationTime.asProtobuf
       )
     val requestA2 = ledger
-      .submitRequest(party, DummyWithAnnotation(party, "Second submission").create.command)
+      .submitAndWaitRequest(party, DummyWithAnnotation(party, "Second submission").create.command)
       .update(
         _.commands.deduplicationTime := deduplicationTime.asProtobuf,
         _.commands.commandId := requestA1.commands.get.commandId,
@@ -48,9 +48,9 @@ final class CommandDeduplicationIT(timeoutScaleFactor: Double, ledgerTimeInterva
       // Note: the second submit() in this block is deduplicated and thus rejected by the ledger API server,
       // only one submission is therefore sent to the ledger.
       ledgerEnd1 <- ledger.currentEnd()
-      _ <- ledger.submit(requestA1)
+      _ <- ledger.submitAndWait(requestA1)
       failure1 <- ledger
-        .submit(requestA1)
+        .submitAndWait(requestA1)
         .mustFail("submitting the first request for the second time")
       completions1 <- ledger.firstCompletions(ledger.completionStreamRequest(ledgerEnd1)(party))
 
@@ -63,9 +63,9 @@ final class CommandDeduplicationIT(timeoutScaleFactor: Double, ledgerTimeInterva
       // `deduplicationSeconds` after receiving the first command *completion*.
       // The first submit() in this block should therefore lead to an accepted transaction.
       ledgerEnd2 <- ledger.currentEnd()
-      _ <- ledger.submit(requestA2)
+      _ <- ledger.submitAndWait(requestA2)
       failure2 <- ledger
-        .submit(requestA2)
+        .submitAndWait(requestA2)
         .mustFail("submitting the second request for the second time")
       completions2 <- ledger.firstCompletions(ledger.completionStreamRequest(ledgerEnd2)(party))
 

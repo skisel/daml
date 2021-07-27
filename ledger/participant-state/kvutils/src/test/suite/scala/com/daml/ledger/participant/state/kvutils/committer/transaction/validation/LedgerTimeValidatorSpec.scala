@@ -37,7 +37,8 @@ class LedgerTimeValidatorSpec extends AnyWordSpec with Matchers {
   private val metrics = new Metrics(new MetricRegistry)
   private val rejections = new Rejections(metrics)
   private val ledgerTimeValidationStep =
-    new LedgerTimeValidator(theDefaultConfig).createValidationStep(rejections)
+    new LedgerTimeValidator(theDefaultConfig, inStaticTimeMode = false)
+      .createValidationStep(rejections)
 
   private val aDamlTransactionEntry = createEmptyTransactionEntry(List("aSubmitter"))
   private val aTransactionEntrySummary = DamlTransactionEntrySummary(aDamlTransactionEntry)
