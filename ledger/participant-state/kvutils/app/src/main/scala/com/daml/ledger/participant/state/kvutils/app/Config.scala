@@ -52,7 +52,6 @@ final case class Config[Extra](
     enableAppendOnlySchema: Boolean, // TODO append-only: remove after removing support for the current (mutating) schema
     enableMutableContractStateCache: Boolean,
     enableInMemoryFanOutForLedgerApi: Boolean,
-    enableHa: Boolean, // TODO ha: remove after stable
     extra: Extra,
 ) {
   def withTlsConfig(modify: TlsConfiguration => TlsConfiguration): Config[Extra] =
@@ -87,7 +86,6 @@ object Config {
       enableAppendOnlySchema = false,
       enableMutableContractStateCache = false,
       enableInMemoryFanOutForLedgerApi = false,
-      enableHa = false,
       maxDeduplicationDuration = None,
       extra = extra,
     )
@@ -648,15 +646,6 @@ object Config {
             )
           else success
         )
-
-        // TODO ha: remove after stable
-        opt[Unit]("index-ha-unsafe")
-          .optional()
-          .hidden()
-          .text(
-            s"Use the experimental High Availability feature with the indexer. Should not be used in production."
-          )
-          .action((_, config) => config.copy(enableHa = true))
       }
     extraOptions(parser)
     parser

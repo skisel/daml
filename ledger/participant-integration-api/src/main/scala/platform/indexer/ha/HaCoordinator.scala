@@ -60,7 +60,6 @@ case class HaConfig(
     mainLockCheckerPeriodMillis: Long = 1000,
     indexerLockId: Int = 0x646d6c00, // note 0x646d6c equals ASCII encoded "dml"
     indexerWorkerLockId: Int = 0x646d6c01,
-    enable: Boolean = false, // TODO ha: remove as stable
 )
 
 object HaCoordinator {
