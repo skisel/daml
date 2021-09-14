@@ -215,7 +215,7 @@ class CommandTrackerFlowTest
 
         submissions.sendNext(submission)
 
-        results.expectNext(Ctx(context, failureCompletion(Code.RESOURCE_EXHAUSTED)))
+        results.expectNext(Ctx(context, Left(failureCompletion(Code.RESOURCE_EXHAUSTED))))
         succeed
       }
 
@@ -445,7 +445,9 @@ class CommandTrackerFlowTest
         results.expectNext(
           Ctx(
             context,
-            failureCompletion(Code.INVALID_ARGUMENT),
+            Left(
+              failureCompletion(Code.INVALID_ARGUMENT)
+            ),
           )
         )
         succeed
@@ -510,7 +512,11 @@ class CommandTrackerFlowTest
             _ = results.expectNext(
               Ctx(
                 context,
-                Right(successCompletion),
+                Right(
+                  successCompletion.copy(completion =
+                    successCompletion.completion.update(_.commandId := commandId)
+                  )
+                ),
               )
             )
           } yield ()
@@ -544,9 +550,7 @@ class CommandTrackerFlowTest
 
   }
   def failureCompletion(code: Code) =
-    Left(
-      NotOkResponse(Completion(commandId = commandId, status = Some(Status(code.value))))
-    )
+    NotOkResponse(Completion(commandId = commandId, status = Some(Status(code.value))))
 
   private def commandWithId(commandId: String) = {
     val request = submission.value
