@@ -6,9 +6,9 @@ package scenario
 
 import com.daml.lf.data.Ref._
 import com.daml.lf.data.{ImmArray, Ref, Time}
-import com.daml.lf.engine.Engine
+import com.daml.lf.engine.{Engine, ValueEnricher, Result, ResultDone, ResultNeedPackage}
 import com.daml.lf.language.{Ast, LookupError}
-import com.daml.lf.transaction.{GlobalKey, NodeId, SubmittedTransaction}
+import com.daml.lf.transaction.{GlobalKey, NodeId, SubmittedTransaction, CommittedTransaction}
 import com.daml.lf.value.Value.{ContractId, ContractInst}
 import com.daml.lf.speedy._
 import com.daml.lf.speedy.SResult._
@@ -29,6 +29,7 @@ import scala.util.{Failure, Success, Try}
   *        with [[com.daml.lf.data.Ref.Party]].
   */
 final case class ScenarioRunner(
+    packages: Map[PackageId, Ast.Package],
     machine: Speedy.Machine,
     initialSeed: crypto.Hash,
     partyNameMangler: (String => String) = identity,
@@ -82,6 +83,7 @@ final case class ScenarioRunner(
 
         case SResultScenarioSubmit(committers, commands, location, mustFail, callback) =>
           val submitResult = submit(
+            packages,
             machine.compiledPackages,
             ScenarioLedgerApi(ledger),
             committers,
@@ -169,7 +171,7 @@ object ScenarioRunner {
       engine.compiledPackages(),
       scenarioExpr,
     )
-    ScenarioRunner(speedyMachine, transactionSeed).run() match {
+    ScenarioRunner(Map(), speedyMachine, transactionSeed).run() match {
       case err: ScenarioError =>
         throw new RuntimeException(s"error running scenario $scenarioRef in scenario ${err.error}")
       case success: ScenarioSuccess => success.ledger
@@ -383,7 +385,11 @@ object ScenarioRunner {
       }
   }
 
+  val engine = Engine.DevEngine()
+  val enricher = new ValueEnricher(engine)
+
   def submit[R](
+      packages: Map[PackageId, Ast.Package],
       compiledPackages: CompiledPackages,
       ledger: LedgerApi[R],
       committers: Set[Party],
@@ -404,15 +410,32 @@ object ScenarioRunner {
       traceLog = traceLog,
       warningLog = warningLog,
       commitLocation = location,
-      transactionNormalization = false,
     )
     val onLedger = ledgerMachine.withOnLedger(NameOf.qualifiedNameOfCurrentFunc)(identity)
+
+    def consumeEnricherResult[V](res: Result[V]): V = {
+      res match {
+        case ResultDone(x) => x
+        case ResultNeedPackage(pkgId, resume) => //NICK: recompilation of packages; bad!
+          //println(s"ResultNeedPackage: $pkgId")
+          consumeEnricherResult(resume(packages.get(pkgId)))
+        case x =>
+          throw new RuntimeException(s"unexpected Result when enriching value: $x")
+      }
+    }
+
     @tailrec
     def go(): SubmissionResult[R] = {
       ledgerMachine.run() match {
         case SResult.SResultFinalValue(resultValue) =>
           onLedger.ptxInternal.finish match {
-            case PartialTransaction.CompleteTransaction(tx, locationInfo, _) =>
+            case PartialTransaction.CompleteTransaction(tx0, locationInfo, _) =>
+              val tx =
+                SubmittedTransaction(
+                  consumeEnricherResult(
+                    enricher.enrichTransaction(CommittedTransaction(tx0))
+                  )
+                )
               ledger.commit(committers, readAs, location, tx, locationInfo) match {
                 case Left(err) =>
                   SubmissionError(err, onLedger.ptxInternal)

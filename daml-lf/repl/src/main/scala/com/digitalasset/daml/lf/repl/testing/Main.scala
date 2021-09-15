@@ -206,7 +206,7 @@ object Repl {
           compiledPackages,
           expr,
         )
-      (machine, ScenarioRunner(machine, seed).run())
+      (machine, ScenarioRunner(packages, machine, seed).run())
     }
   }
 

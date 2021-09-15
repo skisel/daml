@@ -81,6 +81,7 @@ class CollectAuthorityState {
           assert(!mustFail)
           val api = new CannedLedgerApi(step, cachedContract)
           ScenarioRunner.submit(
+            Map(),
             machine.compiledPackages,
             api,
             committers,
@@ -123,6 +124,7 @@ class CollectAuthorityState {
           assert(!mustFail)
           val api = new CachedLedgerApi(step, ledger)
           ScenarioRunner.submit(
+            Map(),
             machine.compiledPackages,
             api,
             committers,
