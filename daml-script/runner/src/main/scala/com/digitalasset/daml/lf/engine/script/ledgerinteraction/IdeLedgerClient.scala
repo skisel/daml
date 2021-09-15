@@ -137,6 +137,7 @@ class IdeLedgerClient(
 
       val ledgerApi = ScenarioRunner.ScenarioLedgerApi(ledger)
       val result = ScenarioRunner.submit(
+        Map(),
         compiledPackages,
         ledgerApi,
         actAs.toSet,
