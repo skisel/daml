@@ -709,7 +709,9 @@ private[backend] trait CommonStorageBackend[DB_BATCH] extends StorageBackend[DB_
   override def checkDatabaseAvailable(connection: Connection): Unit =
     assert(SQL"SELECT 1".as(get[Int](1).single)(connection) == 1)
 
-  override def maxEventSequentialIdOfAnObservableEvent(offset: Offset)(connection: Connection): Option[Long] = {
+  override def maxEventSequentialIdOfAnObservableEvent(
+      offset: Offset
+  )(connection: Connection): Option[Long] = {
     import com.daml.platform.store.Conversions.OffsetToStatement
     SQL"""
 SELECT max_esi FROM (
